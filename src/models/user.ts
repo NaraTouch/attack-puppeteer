@@ -6,4 +6,6 @@ export interface User {
     accountNumber: string;
     accountName: string;
     depositAmount: string;
+    referralCode: string;
+    status: string;
 }
