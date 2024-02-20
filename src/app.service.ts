@@ -22,7 +22,8 @@ export class AppService {
   async writeUser(user:any) {
     const ExcelJS = require("exceljs");
     // Load the existing excel file
-    const workbook = await new ExcelJS.Workbook().xlsx.readFile("users-done.xlsx");
+    const file_name = 'phismeoff.xlsx';
+    const workbook = await new ExcelJS.Workbook().xlsx.readFile(file_name);
     // Get the existing worksheet by its name
     const worksheet = workbook.getWorksheet("Users");
     // Get the last row of the worksheet and increment its number
@@ -41,7 +42,7 @@ export class AppService {
     nextRow.getCell("J").value = user.message;
     nextRow.commit();
     // Save the updated workbook to the same file
-    return await workbook.xlsx.writeFile("users-done2.xlsx");
+    return await workbook.xlsx.writeFile(file_name);
   }
   
   async attack(req: Req) {
@@ -50,6 +51,10 @@ export class AppService {
     let users = await this.resumeUser();
     
     for (let user of users) {
+      if (user.status == 'done') {
+        console.log(user.status);
+        continue;
+      }
       user.status = 'no';
       user.message = 'failed';
       const options = {
@@ -120,27 +125,30 @@ export class AppService {
             return document.querySelector("#rendered-message-amp-form-2");
           }, { timeout: 3000 }); // Wait for 3 seconds
           // Do something with the message element, such as getting its text content
-          const text = await page.evaluate((el) => el.textContent, message);
-          const trimmedText = text.trim();
-          let found = this.error_msg.includes(trimmedText);
-          // console.log(text);
-          console.log(trimmedText);
-          console.log(found);
-          if (found) {
-            user.status = 'no';
-            user.message = text;
-            await this.writeUser(user);
-            await browser.close();
-            continue;
+          let text = '';
+          try {
+            text = await page.evaluate((el) => el.textContent, message);
+          } catch(e) {
+            console.log(e);
+          }
+          if (text) {
+            const trimmedText = text.trim();
+            let found = this.error_msg.includes(trimmedText);
+            // console.log(text);
+            console.log(trimmedText);
+            console.log(found);
+            if (found) {
+              user.status = 'no';
+              user.message = text;
+              await this.writeUser(user);
+              await browser.close();
+              continue;
+            }
           }
         } catch(e) {
           console.log(e);
-          user.status = 'no';
-          user.status = 'failed';
-          await this.writeUser(user);
-          await browser.close();
-          continue;
         }
+      
         await page.waitForNavigation({waitUntil: 'networkidle0'});
 
         const url = await page.url();
@@ -167,14 +175,14 @@ export class AppService {
         console.log('Input nominal -------------');
         await page.click('input[name="submit_deposit"]');
         user.status = 'done';
-        user.status = 'success';
+        user.message = 'success';
         await this.writeUser(user);
         await browser.close();
         continue;
       } catch (e) {
         console.log(e);
         user.status = 'no';
-        user.status = 'failed';
+        user.message = 'failed';
         await this.writeUser(user);
         await browser.close();
         continue;
@@ -209,6 +217,7 @@ export class AppService {
         const depositAmount = row.getCell(7).value;
         const referralCode = row.getCell(8).value;
         const status = row.getCell(9).value;
+        const message = row.getCell(10).value;
 
         // Create a user object with the fields
         const userObject = {
@@ -220,7 +229,8 @@ export class AppService {
           accountName,
           depositAmount,
           referralCode,
-          status
+          status,
+          message
         };
 
         // Push the user object to the array
