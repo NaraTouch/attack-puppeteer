@@ -41,14 +41,14 @@ export class AppService {
     nextRow.getCell("J").value = user.message;
     nextRow.commit();
     // Save the updated workbook to the same file
-    return await workbook.xlsx.writeFile("users-done.xlsx");
+    return await workbook.xlsx.writeFile("users-done2.xlsx");
   }
   
   async attack(req: Req) {
     // let users = await this.generateRandomUser(req.accounts);
-    
-    let users = await this.resumeUser();
     let res = new Res();
+    let users = await this.resumeUser();
+    
     for (let user of users) {
       user.status = 'no';
       user.message = 'failed';
@@ -188,7 +188,7 @@ export class AppService {
     const workbook = new ExcelJS.Workbook();
 
     // Read the file
-    await workbook.xlsx.readFile('users-ex.xlsx');
+    await workbook.xlsx.readFile('users.xlsx');
 
     // Get the first worksheet
     const worksheet = workbook.getWorksheet(1);
@@ -233,69 +233,135 @@ export class AppService {
    
   }
 
-  async  generateRandomUser(user_count: any) {
+  async generateRandomUser(user_count: any) {
     const faker = require('faker');
     const ExcelJS = require('exceljs');
-        // Create an array to store the user objects
-        const users: User[] = [];
 
-        // Loop user_count times
-        for (let i = 0; i < user_count; i++) {
-            // Generate random user data
-            let username = faker.name.findName();
-            let password = faker.internet.password();
-            let email = faker.internet.email().toLowerCase();
-            let phone = this.generatePhoneNumber();
-            let accountNumber = faker.finance.account();
-            let accountName = faker.name.findName();
-            let depositAmount = this.generateRandom(1, 99);
-            let referralCode = 'AGABK29305';
-            let status = '';
-            let message = '';
-            // Create a user object with the fields
-            let userObject = {
-                username,
-                password,
-                email,
-                phone,
-                accountNumber,
-                accountName,
-                depositAmount,
-                referralCode,
-                status,
-                message
-            };
+    // Create an array to store the user objects
+    const users: User[] = [];
 
-            // Push the user object to the array
-            users.push(userObject);
-        }
+    // Loop user_count times
+    for (let i = 0; i < user_count; i++) {
+        // Generate random user data
+        let username = `phismeoff${i + 1}`; // Construct the username
+        let password = faker.internet.password();
+        let email = `phismeoff${i + 1}@example.com`; // Construct the email
+        let phone = this.generatePhoneNumber();
+        let accountNumber = faker.finance.account();
+        let accountName = faker.name.findName();
+        let depositAmount = this.generateRandom(1, 99);
+        let referralCode = 'AGABK29305';
+        let status = '';
+        let message = '';
 
-        // Write user data to an Excel file
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Users');
-        worksheet.columns = [
-            { header: 'Username', key: 'username' },
-            { header: 'Password', key: 'password' },
-            { header: 'Email', key: 'email' },
-            { header: 'Phone', key: 'phone' },
-            { header: 'Account Number', key: 'accountNumber' },
-            { header: 'Account Name', key: 'accountName' },
-            { header: 'Deposit Amount', key: 'depositAmount' },
-            { header: 'Referral Code', key: 'referralCode' },
-            { header: 'status', key: 'status' },
-        ];
+        // Create a user object with the fields
+        let userObject = {
+            username,
+            password,
+            email,
+            phone,
+            accountNumber,
+            accountName,
+            depositAmount,
+            referralCode,
+            status,
+            message
+        };
 
-        users.forEach((user) => {
-            worksheet.addRow(user);
-        });
+        // Push the user object to the array
+        users.push(userObject);
+      }
 
-        // Save the workbook to a file
-        await workbook.xlsx.writeFile('users.xlsx');
-        console.log('User data written to users.xlsx');
+      // Write user data to an Excel file
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Users');
+      worksheet.columns = [
+          { header: 'Username', key: 'username' },
+          { header: 'Password', key: 'password' },
+          { header: 'Email', key: 'email' },
+          { header: 'Phone', key: 'phone' },
+          { header: 'Account Number', key: 'accountNumber' },
+          { header: 'Account Name', key: 'accountName' },
+          { header: 'Deposit Amount', key: 'depositAmount' },
+          { header: 'Referral Code', key: 'referralCode' },
+          { header: 'status', key: 'status' },
+      ];
 
-        // Return the array of user objects (optional)
-        return users;
+      users.forEach((user) => {
+          worksheet.addRow(user);
+      });
+
+      // Save the workbook to a file
+      await workbook.xlsx.writeFile('users.xlsx');
+      console.log('User data written to users.xlsx');
+
+      // Return the array of user objects (optional)
+      return users;
   }
+
+  // async  generateRandomUser(user_count: any) {
+  //   const faker = require('faker');
+  //   const ExcelJS = require('exceljs');
+  //       // Create an array to store the user objects
+  //       const users: User[] = [];
+
+  //       // Loop user_count times
+  //       for (let i = 0; i < user_count; i++) {
+  //           // Generate random user data
+  //           let username = faker.name.findName();
+  //           let password = faker.internet.password();
+  //           let email = faker.internet.email().toLowerCase();
+  //           let phone = this.generatePhoneNumber();
+  //           let accountNumber = faker.finance.account();
+  //           let accountName = faker.name.findName();
+  //           let depositAmount = this.generateRandom(1, 99);
+  //           let referralCode = 'AGABK29305';
+  //           let status = '';
+  //           let message = '';
+  //           // Create a user object with the fields
+  //           let userObject = {
+  //               username,
+  //               password,
+  //               email,
+  //               phone,
+  //               accountNumber,
+  //               accountName,
+  //               depositAmount,
+  //               referralCode,
+  //               status,
+  //               message
+  //           };
+
+  //           // Push the user object to the array
+  //           users.push(userObject);
+  //       }
+
+  //       // Write user data to an Excel file
+  //       const workbook = new ExcelJS.Workbook();
+  //       const worksheet = workbook.addWorksheet('Users');
+  //       worksheet.columns = [
+  //           { header: 'Username', key: 'username' },
+  //           { header: 'Password', key: 'password' },
+  //           { header: 'Email', key: 'email' },
+  //           { header: 'Phone', key: 'phone' },
+  //           { header: 'Account Number', key: 'accountNumber' },
+  //           { header: 'Account Name', key: 'accountName' },
+  //           { header: 'Deposit Amount', key: 'depositAmount' },
+  //           { header: 'Referral Code', key: 'referralCode' },
+  //           { header: 'status', key: 'status' },
+  //       ];
+
+  //       users.forEach((user) => {
+  //           worksheet.addRow(user);
+  //       });
+
+  //       // Save the workbook to a file
+  //       await workbook.xlsx.writeFile('users.xlsx');
+  //       console.log('User data written to users.xlsx');
+
+  //       // Return the array of user objects (optional)
+  //       return users;
+  // }
 
   generatePhoneNumber() {
       // Generate a random phone number using Math.random()
