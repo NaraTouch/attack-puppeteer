@@ -7,52 +7,81 @@ import { User } from './models/user'; // Define the User type (adjust the path)
 @Injectable()
 export class AppService {
 
-  private url = 'https://beerslot365.com/daftar';
+  private url = 'https://rawr.minumbeer.pro/daftar';
   // private timeout = 10000000;
   private timeout = 100000;
+  private error_msg = [
+    'Silakan Pilih Username Lain',
+    'Data telah terdaftar. Silakan gunakan Data Lain.',
+  ];
 
   getHello(): string {
     return 'Hello World!';
   }
 
+  async writeUser(user:any) {
+    const ExcelJS = require("exceljs");
+    // Load the existing excel file
+    const workbook = await new ExcelJS.Workbook().xlsx.readFile("users-done.xlsx");
+    // Get the existing worksheet by its name
+    const worksheet = workbook.getWorksheet("Users");
+    // Get the last row of the worksheet and increment its number
+    const lastRow = worksheet.lastRow;
+    const nextRow = worksheet.getRow(lastRow.number + 1);
+    // Add the user object values to the next row
+    nextRow.getCell("A").value = user.username;
+    nextRow.getCell("B").value = user.password;
+    nextRow.getCell("C").value = user.email;
+    nextRow.getCell("D").value = user.phone;
+    nextRow.getCell("E").value = user.accountNumber;
+    nextRow.getCell("F").value = user.accountName;
+    nextRow.getCell("G").value = user.depositAmount;
+    nextRow.getCell("H").value = user.referralCode;
+    nextRow.getCell("I").value = user.status;
+    nextRow.getCell("J").value = user.message;
+    nextRow.commit();
+    // Save the updated workbook to the same file
+    return await workbook.xlsx.writeFile("users-done.xlsx");
+  }
+  
   async attack(req: Req) {
     // let users = await this.generateRandomUser(req.accounts);
+    
     let users = await this.resumeUser();
     let res = new Res();
     for (let user of users) {
-      if (user.status == 'done') {
-        continue;
-      }
-      console.log(user);
+      user.status = 'no';
+      user.message = 'failed';
+      const options = {
+        width: 1920,
+        height: 1080
+      };
+
+      const randomUseragent = require('random-useragent');
+      const useragent = randomUseragent.getRandom(function (ua: any) {
+        return ua.browserName === 'Chrome';
+      });
+
+      res.message = 'success';
+      const browser = await puppeteer.launch({
+        headless: false,
+        args: [
+          `--window-size=${options.width},${options.height}`,
+        ],
+      });
+      let page = await browser.newPage();
+      await page.setViewport(options);
+      await page.setDefaultNavigationTimeout(this.timeout);
+      await page.setDefaultTimeout(0);
+      await page.setUserAgent(useragent);
+      await page.evaluateOnNewDocument(() => {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
+      });
+      await page.setJavaScriptEnabled(true);
+      console.log(useragent);
       try {
-        const options = {
-          width: 1920,
-          height: 1080
-        };
-
-        const randomUseragent = require('random-useragent');
-        const useragent = randomUseragent.getRandom(function (ua: any) {
-          return ua.browserName === 'Chrome';
-        });
-
-        res.message = 'success';
-        const browser = await puppeteer.launch({
-            headless: false,
-            args: [`--window-size=${options.width},${options.height}`]
-        });
-        let page = await browser.newPage();
-        await page.setViewport(options);
-        // await page._client.send('Emulation.clearDeviceMetricsOverride');
-        await page.setDefaultNavigationTimeout(this.timeout);
-        await page.setDefaultTimeout(0);
-        await page.setUserAgent(useragent);
-        await page.evaluateOnNewDocument(() => {
-          Object.defineProperty(navigator, 'webdriver', {
-            get: () => false,
-          });
-        });
-        await page.setJavaScriptEnabled(true);
-        console.log(useragent);
         await Promise.all([
             page.goto(this.url, {waitUntil: 'networkidle2'}),
             page.waitForNavigation()
@@ -86,6 +115,32 @@ export class AppService {
 
         // Click the submit button by its class name
         await page.click('.btn-submit');
+        try {
+          const message = await page.waitForFunction(() => {
+            return document.querySelector("#rendered-message-amp-form-2");
+          }, { timeout: 3000 }); // Wait for 3 seconds
+          // Do something with the message element, such as getting its text content
+          const text = await page.evaluate((el) => el.textContent, message);
+          const trimmedText = text.trim();
+          let found = this.error_msg.includes(trimmedText);
+          // console.log(text);
+          console.log(trimmedText);
+          console.log(found);
+          if (found) {
+            user.status = 'no';
+            user.message = text;
+            await this.writeUser(user);
+            await browser.close();
+            continue;
+          }
+        } catch(e) {
+          console.log(e);
+          user.status = 'no';
+          user.status = 'failed';
+          await this.writeUser(user);
+          await browser.close();
+          continue;
+        }
         await page.waitForNavigation({waitUntil: 'networkidle0'});
 
         const url = await page.url();
@@ -111,23 +166,23 @@ export class AppService {
         await page.type('#nominal', user.depositAmount, { delay: 20 });
         console.log('Input nominal -------------');
         await page.click('input[name="submit_deposit"]');
+        user.status = 'done';
+        user.status = 'success';
+        await this.writeUser(user);
         await browser.close();
-        // await Promise.all([
-        //   page.goto(url+'logout', {waitUntil: 'networkidle2'}),
-        //   page.waitForNavigation()
-        // ]);
-        
-        // // console.log('Browser url : '+url);
-        // // await page.goto(url+'/logout');
-
-        // await browser.close();
-        // console.log('Close browser -------------');
+        continue;
       } catch (e) {
         console.log(e);
+        user.status = 'no';
+        user.status = 'failed';
+        await this.writeUser(user);
+        await browser.close();
+        continue;
       }
     }
     return res.getRes();
   }
+
   async  resumeUser() {
     const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
@@ -196,6 +251,7 @@ export class AppService {
             let depositAmount = this.generateRandom(1, 99);
             let referralCode = 'AGABK29305';
             let status = '';
+            let message = '';
             // Create a user object with the fields
             let userObject = {
                 username,
@@ -206,7 +262,8 @@ export class AppService {
                 accountName,
                 depositAmount,
                 referralCode,
-                status
+                status,
+                message
             };
 
             // Push the user object to the array

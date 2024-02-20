@@ -8,4 +8,5 @@ export interface User {
     depositAmount: string;
     referralCode: string;
     status: string;
+    message: string;
 }
