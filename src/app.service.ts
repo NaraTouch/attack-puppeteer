@@ -7,7 +7,7 @@ import { User } from './models/user'; // Define the User type (adjust the path)
 @Injectable()
 export class AppService {
 
-  private url = 'https://rawr.minumbeer.pro/daftar';
+  private url = 'https://beerslot365.com/';
   // private timeout = 10000000;
   private timeout = 100000;
   private error_msg = [
@@ -63,10 +63,16 @@ export class AppService {
       };
 
       const randomUseragent = require('random-useragent');
+      // const useragent = randomUseragent.getRandom(function (ua: any) {
+      //   return ua.browserName === 'Chrome';
+      // });
       const useragent = randomUseragent.getRandom(function (ua: any) {
-        return ua.browserName === 'Chrome';
+          if (ua.browserName === 'Chrome' && parseFloat(ua.browserVersion) >= 20) {
+            return ua.browserName;
+          }
       });
-
+      console.log(useragent);
+  
       res.message = 'success';
       const browser = await puppeteer.launch({
         headless: false,
@@ -78,19 +84,35 @@ export class AppService {
       await page.setViewport(options);
       await page.setDefaultNavigationTimeout(this.timeout);
       await page.setDefaultTimeout(0);
-      await page.setUserAgent(useragent);
+      // await page.setUserAgent(useragent);
       await page.evaluateOnNewDocument(() => {
         Object.defineProperty(navigator, 'webdriver', {
           get: () => false,
         });
       });
       await page.setJavaScriptEnabled(true);
-      console.log(useragent);
+      
       try {
         await Promise.all([
             page.goto(this.url, {waitUntil: 'networkidle2'}),
             page.waitForNavigation()
           ]);
+          let div_selector_to_remove= "#popup1";
+          await page.evaluate((sel) => {
+              var elements = document.querySelectorAll(sel);
+              for(var i=0; i< elements.length; i++){
+                  elements[i].parentNode.removeChild(elements[i]);
+              }
+          }, div_selector_to_remove)
+          // Login
+          await page.type('#username', user.username, { delay: 10 });
+          console.log('Input user_name -------------');
+          await page.type('#password', user.password, { delay: 10 });
+          console.log('Input password -------------');
+          //  // Click the submit button by its class name
+          await page.click('input[name="signin"]');
+          // End login
+        /*  Sign up 
         await page.waitForSelector('.form-daftar', {visible: true});
         console.log('Daftar Form -------------');
 
@@ -120,6 +142,7 @@ export class AppService {
 
         // Click the submit button by its class name
         await page.click('.btn-submit');
+        */
         try {
           const message = await page.waitForFunction(() => {
             return document.querySelector("#rendered-message-amp-form-2");
@@ -196,7 +219,7 @@ export class AppService {
     const workbook = new ExcelJS.Workbook();
 
     // Read the file
-    await workbook.xlsx.readFile('users.xlsx');
+    await workbook.xlsx.readFile('phismeoff-user.xlsx');
 
     // Get the first worksheet
     const worksheet = workbook.getWorksheet(1);
